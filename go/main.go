@@ -43,7 +43,7 @@ func auth(c echo.Context) error {
 		return err
 	}
 	fmt.Println(url)
-	return c.Redirect(http.StatusFound, url)
+	return c.JSON(http.StatusFound, map[string]string{"url": url})
 }
 
 func token(c echo.Context) error {
