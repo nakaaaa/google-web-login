@@ -29,6 +29,7 @@ func main() {
 	e.GET("/auth", auth)
 	e.GET("/token", token)
 	e.GET("/verify", verify)
+	e.GET("/verify/id_token", verifyIDToken)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
@@ -55,11 +56,20 @@ func token(c echo.Context) error {
 	return c.JSON(http.StatusOK, t)
 }
 
-func verify(e echo.Context) error {
-	token := e.QueryParam("token")
-	t, err := googleConfig.VerifyToken(e.Request().Context(), token)
+func verify(c echo.Context) error {
+	token := c.QueryParam("token")
+	t, err := googleConfig.VerifyToken(c.Request().Context(), token)
 	if err != nil {
 		return err
 	}
-	return e.JSON(http.StatusOK, t)
+	return c.JSON(http.StatusOK, t)
+}
+
+func verifyIDToken(c echo.Context) error {
+	code := c.QueryParam("code")
+	t, err := googleConfig.VerifyIDToken(c.Request().Context(), code)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, t)
 }

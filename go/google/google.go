@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -46,11 +47,20 @@ type IDToken struct {
 
 const callbackURL = "http://localhost:3000/callback"
 
+func (c *Config) VerifyIDToken(ctx context.Context, code string) (*IDToken, error) {
+	t, err := c.Token(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.VerifyToken(ctx, t.IDToken)
+}
+
 func (c *Config) VerifyToken(ctx context.Context, idToken string) (*IDToken, error) {
 	v := url.Values{}
 	v.Set("id_token", idToken)
 
-	url := "https://oauth2.googleapis.com/tokeninfo?" + v.Encode()
+	url := "https://oauth3.googleapis.com/tokeninfo?" + v.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -94,11 +104,11 @@ func (c *Config) VerifyToken(ctx context.Context, idToken string) (*IDToken, err
 
 func (c *Config) Token(ctx context.Context, code string) (*TokenInfo, error) {
 	v := url.Values{}
+	v.Set("code", code)
 	v.Set("client_id", c.ClientID)
 	v.Set("client_secret", c.ClientSecret)
 	v.Set("redirect_uri", callbackURL)
 	v.Set("grant_type", "authorization_code")
-	v.Set("code", code)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://oauth2.googleapis.com/token", bytes.NewBufferString(v.Encode()))
 	if err != nil {
@@ -112,6 +122,9 @@ func (c *Config) Token(ctx context.Context, code string) (*TokenInfo, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	b, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(b))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status code: %d", resp.StatusCode)
